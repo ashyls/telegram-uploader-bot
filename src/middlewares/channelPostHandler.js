@@ -15,6 +15,7 @@ async function channelPostHandler(ctx, next) {
   try {
     let fileType = '';
     let fileId = '';
+    console.log(message);
 
     if (message.photo) {
       fileId = message.photo[message.photo.length - 1].file_id;
@@ -25,6 +26,12 @@ async function channelPostHandler(ctx, next) {
     } else if (message.document) {
       fileId = message.document.file_id;
       fileType = 'document';
+    } else if (message.audio) {
+      fileId = message.audio.file_id;
+      fileType = 'audio';
+    } else if (message.voice) {
+      fileId = message.voice.file_id;
+      fileType = 'voice';
     } else {
       return ctx.reply('You sent an unknown file type.');
     }

@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import crypto from 'crypto';
 
 const { Schema } = mongoose;
 
@@ -18,7 +17,7 @@ const mediaSchema = new Schema({
     },
     type: {
         type: String,
-        enum: ['video', 'photo', 'document']
+        enum: ['video', 'photo', 'document', 'audio', 'voice']
     }
 }, { timestamps: true });
 

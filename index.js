@@ -45,6 +45,14 @@ bot.start(async (ctx, next) => {
                             ctx.replyWithDocument(file.id, {caption: file.caption});
                             break;
                 
+                        case 'voice':
+                            ctx.replyWithVoice(file.id, {caption: file.caption});
+                            break;
+                        
+                        case 'audio':
+                            ctx.replyWithAudio(file.id, {caption: file.caption});
+                            break;
+                
                         default:
                             break;
                     }
