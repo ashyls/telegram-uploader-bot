@@ -19,7 +19,7 @@ botOptions.telegram = { agent: socksAgent };
 
 const bot = new Telegraf(token, botOptions);
 
-bot.on('channel_post', channelPostHandler)
+bot.on('channel_post', channelPostHandler);
 
 bot.start(async (ctx, next) => {
     try {
@@ -56,6 +56,9 @@ bot.start(async (ctx, next) => {
                         default:
                             break;
                     }
+                }else {
+                    await Media.deleteOne({ hash: startPayload });
+                    ctx.reply('The requested file is no longer available and has been removed.');
                 }
             }else{
                 next()
