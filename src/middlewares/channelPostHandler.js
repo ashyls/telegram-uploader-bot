@@ -5,6 +5,7 @@ dotenv.config();
 
 const uploadChannel = process.env.UPLOAD_CHANNEL;
 const botUsername = process.env.BOT_USERNAME;
+const ownerId = process.env.OWNER_ID;
 
 async function channelPostHandler(ctx, next) {
   const message = ctx.update.channel_post;
@@ -38,12 +39,12 @@ async function channelPostHandler(ctx, next) {
       fileType = 'voice';
       
     } else {
-      return ctx.reply('You sent an unknown file type.');
+      return ctx.telegram.sendMessage(ownerId, 'You sent an unknown file type.');
     }
 
     const existingMedia = await Media.findOne({ id: fileId });
     if (existingMedia) {
-      return ctx.reply('That file is already uploaded.');
+      return ctx.telegram.sendMessage(ownerId,'That file is already uploaded.');
     }
     
     const newMedia = new Media({
@@ -54,7 +55,7 @@ async function channelPostHandler(ctx, next) {
     });
     
     await newMedia.save();
-    ctx.reply('Your file detail has been successfully saved in the database.');
+    ctx.telegram.sendMessage(ownerId, 'Your file detail has been successfully saved in the database.');
 
     function escapeMarkdownV2(text) {
       return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
@@ -78,8 +79,8 @@ async function channelPostHandler(ctx, next) {
     );    
     
     } catch (error) {
-         console.error('Error handling input message:', error);
-        ctx.reply('An error occurred while processing your request.');
+        console.error('Error handling input message:', error);
+        ctx.telegram.sendMessage(ownerId, 'An error occurred while processing your request.');
     }
   }
 }
