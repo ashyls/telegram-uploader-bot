@@ -4,10 +4,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const uploadChannel = process.env.UPLOAD_CHANNEL;
+const botUsername = process.env.BOT_USERNAME;
 
 async function channelPostHandler(ctx, next) {
   const message = ctx.update.channel_post;
-  const caption = message.caption;
+  const caption = message.caption || '';
   const channelId = message.chat.id;
 
   if (uploadChannel == channelId) {
@@ -15,7 +16,6 @@ async function channelPostHandler(ctx, next) {
   try {
     let fileType = '';
     let fileId = '';
-    console.log(message);
 
     if (message.photo) {
       fileId = message.photo[message.photo.length - 1].file_id;
@@ -45,7 +45,7 @@ async function channelPostHandler(ctx, next) {
     if (existingMedia) {
       return ctx.reply('That file is already uploaded.');
     }
-
+    
     const newMedia = new Media({
         hash: await generateUrlHash(),
         id: fileId,
@@ -56,6 +56,27 @@ async function channelPostHandler(ctx, next) {
     await newMedia.save();
     ctx.reply('Your file detail has been successfully saved in the database.');
 
+    function escapeMarkdownV2(text) {
+      return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
+    }
+    
+    const extraText = `||${escapeMarkdownV2(`https://t.me/${botUsername}?start=${newMedia.hash}`)}||`;
+    
+    await ctx.telegram.editMessageCaption(
+      channelId,
+      message.message_id,
+      null,
+      `${caption}\n\n${extraText}`,
+      {
+        parse_mode: "MarkdownV2",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Link', url: `https://t.me/${botUsername}?start=${newMedia.hash}` }]
+          ]
+        }
+      }
+    );    
+    
     } catch (error) {
          console.error('Error handling input message:', error);
         ctx.reply('An error occurred while processing your request.');

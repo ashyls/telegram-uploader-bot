@@ -1,10 +1,11 @@
-import { Markup, Telegraf } from "telegraf";
+import { Telegraf } from "telegraf";
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import checkSponserChannels from "./src/utils/membership.js";
+import checkSponserChannels from "./src/middlewares/checkSponsorChannels.js";
+import callbackQueryHandler from "./src/middlewares/callbackQueryHandler.js";
 import channelPostHandler from "./src/middlewares/channelPostHandler.js";
 import connectDB from "./src/database/db.js";
+import startCommand from "./src/commands/start.js";
 import dotenv from 'dotenv';
-import Media from "./src/database/model/media.js";
 
 dotenv.config();
 
@@ -18,64 +19,14 @@ const socksAgent = new SocksProxyAgent(`socks5://${proxyHost}:${proxyPort}`);
 botOptions.telegram = { agent: socksAgent };
 
 const bot = new Telegraf(token, botOptions);
-
-bot.on('channel_post', channelPostHandler);
-
-bot.start(async (ctx, next) => {
-    try {
-        const userId = ctx.from.id;
-        const unjoinedChannels = await checkSponserChannels(bot, userId);
-
-        if (unjoinedChannels.length === 0) {
-            const startPayload = ctx.startPayload;
-            
-            if(startPayload) {
-                let file = await Media.findOne({ hash: startPayload });
-                if(file) {
-                    switch (file.type) {
-                        case 'photo':
-                                ctx.replyWithPhoto(file.id, {caption: file.caption});
-                            break;
-                
-                        case 'video':
-                            ctx.replyWithVideo(file.id, {caption: file.caption});
-                            break;
-                
-                        case 'document':
-                            ctx.replyWithDocument(file.id, {caption: file.caption});
-                            break;
-                
-                        case 'voice':
-                            ctx.replyWithVoice(file.id, {caption: file.caption});
-                            break;
-                        
-                        case 'audio':
-                            ctx.replyWithAudio(file.id, {caption: file.caption});
-                            break;
-                
-                        default:
-                            break;
-                    }
-                }else {
-                    await Media.deleteOne({ hash: startPayload });
-                    ctx.reply('The requested file is no longer available and has been removed.');
-                }
-            }else{
-                next()
-            }
-
-        } else {
-            const joinButtons = unjoinedChannels.map((channel) => {
-                return Markup.button.url(`Join ${channel.name}`, channel.url);
-            });
-
-            ctx.reply('You have not joined the following sponsor channels. Please join to continue:', Markup.inlineKeyboard(joinButtons));
-        }
-    } catch (error) {
-        console.error('Error in start handler:', error);
-        ctx.reply('An error occurred. Please try again later.');
-    }
+bot.use((ctx, next) => {
+    ctx.bot = bot;
+    return next();
 });
+
+bot.on('callback_query', callbackQueryHandler);
+bot.on('channel_post', channelPostHandler);
+bot.start(checkSponserChannels, startCommand);
 
 connectDB(mongoURL);
 bot.launch();
